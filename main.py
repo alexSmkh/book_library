@@ -1,13 +1,14 @@
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlsplit, unquote
 from pathvalidate import sanitize_filename
 
+import argparse
+from urllib.parse import urljoin, urlsplit, unquote
 import requests
 import time
 
 import os
 
-BASE_BOOKS_URL = 'https://tululu.org/'
+BASE_URL = 'https://tululu.org/'
 
 
 def check_for_redirect(response):
@@ -44,13 +45,13 @@ def create_dir(dir_path):
     return dir_path
 
 
-def download_file(file_url, directory, filename):
+def download_file(file_url, relative_dir_path, filename):
     try:
         response = request_get(file_url, False)
     except requests.exceptions.HTTPError:
         return None
 
-    dir_path = create_dir(directory)
+    dir_path = create_dir(relative_dir_path)
     filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}')
 
     write_file(filepath, response.content)
@@ -73,7 +74,7 @@ def parse_book_page(page):
 
     title_and_author = main_content.find('h1').text.split('::')
     image_url = urljoin(
-        BASE_BOOKS_URL,
+        BASE_URL,
         main_content.find('div', class_='bookimage').find('img')['src'],
     )
     comments = list(
@@ -107,33 +108,68 @@ def fetch_book_info(book_page_url):
     return parse_book_page(response.text)
 
 
-def download_books():
-    book_counter = 0
-    book_id = 1
+def print_book_info(title, author):
+    print(f'Название: {title}\nАвтор: {author}\n\n')
 
-    while book_counter < 10:
-        book_url = f'{BASE_BOOKS_URL}txt.php?id={book_id}'
-        book_main_page_url = f'{BASE_BOOKS_URL}b{book_id}/'
-        book_info = fetch_book_info(book_main_page_url)
-        time.sleep(1)
+
+def download_books(start_book_id, end_book_id):
+    for current_book_id in range(start_book_id, end_book_id + 1):
+        download_book_url = f'{BASE_URL}txt.php?id={current_book_id}'
+        book_page_url = f'{BASE_URL}b{current_book_id}/'
+        book_info = fetch_book_info(book_page_url)
+        time.sleep(0.5)
 
         if not book_info:
-            book_id += 1
             continue
 
-        filename = f'{book_id}. {book_info["title"]}'
-        book_filepath = download_txt(book_url, filename)
+        filename = f'{current_book_id}. {book_info["title"]}'
+        download_txt(download_book_url, filename)
         download_image(book_info['image_url'])
 
-        if book_filepath:
-            book_counter += 1
+        print_book_info(book_info['title'], book_info['author'])
 
-        print(f'Заголовок: {book_info["title"]}')
-        print(f'Жанры: {book_info["genres"]}')
-        print(f'Комментарии: {book_info["comments"]}\n\n')
 
-        book_id += 1
+def validate_args(start_id, end_id):
+    if start_id <= 0:
+        raise SystemExit('The start book id must be greater than 0')
+    elif end_id <= start_id:
+        raise SystemExit('The end book id must be greater than start book id')
+
+
+def init_parser():
+    parser = argparse.ArgumentParser(
+        description='The program allows you to download books \
+            from https://tululu.org/\n'
+    )
+    parser.add_argument(
+        'start_id',
+        help='''
+        The id of the book from which the download begins.\n
+        This value must be greater than 0 and less than the id of the final
+        book'
+        ''',
+        nargs='?',
+        type=int,
+        default=1,
+    )
+    parser.add_argument(
+        'end_id',
+        help='''
+        The id of the book where the download ends. This value must be greater
+        than the start book id
+        ''',
+        nargs='?',
+        type=int,
+        default=10,
+    )
+    return parser
 
 
 if __name__ == '__main__':
-    download_books()
+    parser = init_parser()
+    args = parser.parse_args()
+    start_book_id, end_book_id = args.start_id, args.end_id
+
+    validate_args(start_book_id, end_book_id)
+
+    download_books(start_book_id, end_book_id)
