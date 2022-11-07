@@ -67,14 +67,10 @@ def download_txt(url, filename, folder='books'):
     return download_file(url, [folder], f'{filename}.txt')
 
 
-def scrape_book_info(book_page_url):
-    try:
-        response = request_get(book_page_url, False)
-    except requests.exceptions.HTTPError:
-        return None
-
-    soup = BeautifulSoup(response.text, 'lxml')
+def parse_book_page(page):
+    soup = BeautifulSoup(page, 'lxml')
     main_content = soup.find('div', id='content')
+
     title_and_author = main_content.find('h1').text.split('::')
     image_url = urljoin(
         BASE_BOOKS_URL,
@@ -102,6 +98,15 @@ def scrape_book_info(book_page_url):
     }
 
 
+def fetch_book_info(book_page_url):
+    try:
+        response = request_get(book_page_url, False)
+    except requests.exceptions.HTTPError:
+        return None
+
+    return parse_book_page(response.text)
+
+
 def download_books():
     book_counter = 0
     book_id = 1
@@ -109,7 +114,7 @@ def download_books():
     while book_counter < 10:
         book_url = f'{BASE_BOOKS_URL}txt.php?id={book_id}'
         book_main_page_url = f'{BASE_BOOKS_URL}b{book_id}/'
-        book_info = scrape_book_info(book_main_page_url)
+        book_info = fetch_book_info(book_main_page_url)
         time.sleep(1)
 
         if not book_info:
@@ -132,4 +137,3 @@ def download_books():
 
 if __name__ == '__main__':
     download_books()
-    # scrape_book_info('https://tululu.org/b1/')
