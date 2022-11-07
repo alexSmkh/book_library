@@ -74,15 +74,22 @@ def scrape_book_info(book_page_url):
         return None
 
     soup = BeautifulSoup(response.text, 'lxml')
-    title_and_author = soup.find('h1').text.split('::')
+    main_content = soup.find('div', id='content')
+    title_and_author = main_content.find('h1').text.split('::')
     image_url = urljoin(
         BASE_BOOKS_URL,
-        soup.find('div', class_='bookimage').find('img')['src'],
+        main_content.find('div', class_='bookimage').find('img')['src'],
     )
     comments = list(
         map(
             lambda comment: comment.find('span', class_='black').text,
-            soup.find_all('div', class_='texts'),
+            main_content.find_all('div', class_='texts'),
+        ),
+    )
+    genres = list(
+        map(
+            lambda genre: genre.text,
+            main_content.find('span', class_='d_book').find_all('a'),
         ),
     )
 
@@ -91,6 +98,7 @@ def scrape_book_info(book_page_url):
         'author': title_and_author[1].strip(),
         'image_url': image_url,
         'comments': comments,
+        'genres': genres,
     }
 
 
@@ -102,7 +110,7 @@ def download_books():
         book_url = f'{BASE_BOOKS_URL}txt.php?id={book_id}'
         book_main_page_url = f'{BASE_BOOKS_URL}b{book_id}/'
         book_info = scrape_book_info(book_main_page_url)
-        time.sleep(0.5)
+        time.sleep(1)
 
         if not book_info:
             book_id += 1
@@ -114,6 +122,10 @@ def download_books():
 
         if book_filepath:
             book_counter += 1
+
+        print(f'Заголовок: {book_info["title"]}')
+        print(f'Жанры: {book_info["genres"]}')
+        print(f'Комментарии: {book_info["comments"]}\n\n')
 
         book_id += 1
 
