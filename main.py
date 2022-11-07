@@ -79,11 +79,18 @@ def scrape_book_info(book_page_url):
         BASE_BOOKS_URL,
         soup.find('div', class_='bookimage').find('img')['src'],
     )
+    comments = list(
+        map(
+            lambda comment: comment.find('span', class_='black').text,
+            soup.find_all('div', class_='texts'),
+        ),
+    )
 
     return {
         'title': title_and_author[0].strip(),
         'author': title_and_author[1].strip(),
-        'image_url': image_url
+        'image_url': image_url,
+        'comments': comments,
     }
 
 
@@ -113,3 +120,4 @@ def download_books():
 
 if __name__ == '__main__':
     download_books()
+    # scrape_book_info('https://tululu.org/b1/')
