@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlsplit, unquote
 from pathvalidate import sanitize_filename
 
 import requests
@@ -29,8 +30,11 @@ def write_file(filepath, raw_data):
         file.write(raw_data)
 
 
-def create_dir(*args):
-    dir_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), *args)
+def create_dir(dir_path):
+    dir_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        *dir_path,
+    )
 
     if os.path.exists(dir_path):
         return dir_path
@@ -40,18 +44,27 @@ def create_dir(*args):
     return dir_path
 
 
-def download_txt(url, filename, folder='books/'):
+def download_file(file_url, directory, filename):
     try:
-        response = request_get(url, False)
+        response = request_get(file_url, False)
     except requests.exceptions.HTTPError:
         return None
 
-    dir_path = create_dir(folder)
-    filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}.txt')
+    dir_path = create_dir(directory)
+    filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}')
 
     write_file(filepath, response.content)
 
     return filepath
+
+
+def download_image(image_url):
+    filename = unquote(urlsplit(image_url).path.split('/')[-1])
+    return download_file(image_url, ['books', 'images'], filename)
+
+
+def download_txt(url, filename, folder='books'):
+    return download_file(url, [folder], f'{filename}.txt')
 
 
 def scrape_book_info(book_page_url):
@@ -62,10 +75,15 @@ def scrape_book_info(book_page_url):
 
     soup = BeautifulSoup(response.text, 'lxml')
     title_and_author = soup.find('h1').text.split('::')
+    image_url = urljoin(
+        BASE_BOOKS_URL,
+        soup.find('div', class_='bookimage').find('img')['src'],
+    )
 
     return {
         'title': title_and_author[0].strip(),
         'author': title_and_author[1].strip(),
+        'image_url': image_url
     }
 
 
@@ -85,6 +103,7 @@ def download_books():
 
         filename = f'{book_id}. {book_info["title"]}'
         book_filepath = download_txt(book_url, filename)
+        download_image(book_info['image_url'])
 
         if book_filepath:
             book_counter += 1
