@@ -1,6 +1,5 @@
 import argparse
 import os
-import time
 from urllib.parse import unquote, urljoin, urlsplit
 
 import requests
@@ -154,8 +153,6 @@ if __name__ == '__main__':
 
         try:
             book_page_response = request_get(book_page_url)
-
-            time.sleep(0.5)
 
             book = parse_book_page(book_page_response.text)
 
