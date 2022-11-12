@@ -1,13 +1,12 @@
 import argparse
 import os
 import sys
-from urllib.parse import unquote, urljoin, urlsplit
 from time import sleep
+from urllib.parse import unquote, urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
-
 
 BASE_URL = 'https://tululu.org'
 
