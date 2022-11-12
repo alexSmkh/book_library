@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 
 
-BASE_URL = 'https://tululu.org/'
+BASE_URL = 'https://tululu.org'
 
 
 def check_for_redirect(response):
@@ -16,8 +16,12 @@ def check_for_redirect(response):
         raise requests.exceptions.HTTPError('An unexpected redirect occurred')
 
 
-def request_get(url, allow_redirects=False):
-    response = requests.get(url, allow_redirects=allow_redirects)
+def request_get(url, params={}, allow_redirects=False):
+    response = requests.get(
+        url,
+        params=params,
+        allow_redirects=allow_redirects
+    )
     response.raise_for_status()
 
     if not allow_redirects:
@@ -40,8 +44,8 @@ def create_dir(relative_path):
     return dir_path
 
 
-def download_txt(url, filename, folder='books/'):
-    response = request_get(url)
+def download_txt(url, filename, url_params={}, folder='books/'):
+    response = request_get(url, url_params)
 
     dir_path = create_dir(folder)
     filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}')
@@ -52,8 +56,8 @@ def download_txt(url, filename, folder='books/'):
     return filepath
 
 
-def download_image(url, filename, folder='images/'):
-    response = request_get(url)
+def download_image(url, filename, url_params={}, folder='images/'):
+    response = request_get(url, url_params)
 
     dir_path = create_dir(folder)
     filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}')
@@ -143,30 +147,25 @@ if __name__ == '__main__':
     validate_args(start_book_id, end_book_id)
 
     for current_book_id in range(start_book_id, end_book_id + 1):
-        download_book_url = f'{BASE_URL}txt.php?id={current_book_id}'
-        book_page_url = f'{BASE_URL}b{current_book_id}/'
+        book_params = {'id': current_book_id}
+        download_book_url = f'{BASE_URL}/txt.php'
+        book_page_url = f'{BASE_URL}/b{current_book_id}/'
 
         try:
             book_page_response = request_get(book_page_url)
-        except requests.exceptions.HTTPError:
-            continue
+            print(book_page_response.text)
 
-        time.sleep(0.5)
+            time.sleep(0.5)
 
-        book_info = parse_book_page(book_page_response.text)
+            book_info = parse_book_page(book_page_response.text)
 
-        filename = f'{current_book_id}. {book_info["title"]}.txt'
-        try:
-            download_txt(download_book_url, filename)
-        except requests.exceptions.HTTPError:
-            continue
+            filename = f'{current_book_id}. {book_info["title"]}.txt'
+            download_txt(download_book_url, filename, book_params)
 
-        image_url = book_info['image_url']
-        image_filename = unquote(urlsplit(image_url).path.split('/')[-1])
-        try:
+            image_url = book_info['image_url']
+            image_filename = unquote(urlsplit(image_url).path.split('/')[-1])
             download_image(image_url, image_filename)
         except requests.exceptions.HTTPError:
-            print(f'Не удалось загружить изображения для {book_info["title"]}')
             continue
 
         print_book_info(book_info['title'], book_info['author'])
