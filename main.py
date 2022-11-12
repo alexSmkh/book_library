@@ -31,10 +31,7 @@ def create_dir(relative_path):
         relative_path,
     )
 
-    if os.path.exists(dir_path):
-        return dir_path
-
-    os.makedirs(dir_path)
+    os.makedirs(dir_path, exist_ok=True)
 
     return dir_path
 
