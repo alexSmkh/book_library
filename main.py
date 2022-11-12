@@ -12,20 +12,15 @@ BASE_URL = 'https://tululu.org'
 
 
 def check_for_redirect(response):
-    if 400 > response.status_code >= 300:
+    if response.history:
         raise requests.exceptions.HTTPError('An unexpected redirect occurred')
 
 
-def make_get_request(url, params={}, allow_redirects=False):
-    response = requests.get(
-        url,
-        params=params,
-        allow_redirects=allow_redirects
-    )
+def make_get_request(url, params={}):
+    response = requests.get(url, params=params)
     response.raise_for_status()
 
-    if not allow_redirects:
-        check_for_redirect(response)
+    check_for_redirect(response)
 
     return response
 
