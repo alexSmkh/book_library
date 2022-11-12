@@ -72,10 +72,15 @@ def parse_book_page(page):
     soup = BeautifulSoup(page, 'lxml')
     main_content = soup.find('div', id='content')
 
-    title_and_author = main_content.find('h1').text.split('::')
     image_url = urljoin(
         BASE_URL,
         main_content.find('div', class_='bookimage').find('img')['src'],
+    )
+    title, author = list(
+        map(
+            lambda part_of_name: part_of_name.strip(),
+            main_content.find('h1').text.split('::'),
+        )
     )
     comments = list(
         map(
@@ -91,8 +96,8 @@ def parse_book_page(page):
     )
 
     return {
-        'title': title_and_author[0].strip(),
-        'author': title_and_author[1].strip(),
+        'title': title,
+        'author': author,
         'image_url': image_url,
         'comments': comments,
         'genres': genres,
