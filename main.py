@@ -153,19 +153,18 @@ if __name__ == '__main__':
 
         try:
             book_page_response = request_get(book_page_url)
-            print(book_page_response.text)
 
             time.sleep(0.5)
 
-            book_info = parse_book_page(book_page_response.text)
+            book = parse_book_page(book_page_response.text)
 
-            filename = f'{current_book_id}. {book_info["title"]}.txt'
+            filename = f'{current_book_id}. {book["title"]}.txt'
             download_txt(download_book_url, filename, book_params)
 
-            image_url = book_info['image_url']
+            image_url = book['image_url']
             image_filename = unquote(urlsplit(image_url).path.split('/')[-1])
             download_image(image_url, image_filename)
         except requests.exceptions.HTTPError:
             continue
 
-        print_book_info(book_info['title'], book_info['author'])
+        print_book_info(book['title'], book['author'])
