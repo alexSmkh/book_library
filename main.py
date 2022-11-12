@@ -99,10 +99,6 @@ def parse_book_page(page):
     }
 
 
-def print_book_info(title, author):
-    print(f'Название: {title}\nАвтор: {author}\n\n')
-
-
 def validate_args(start_id, end_id):
     if start_id <= 0:
         raise SystemExit('The start book id must be greater than 0')
@@ -167,4 +163,4 @@ if __name__ == '__main__':
         except requests.exceptions.HTTPError:
             continue
 
-        print_book_info(book['title'], book['author'])
+        print(f'Название: {book["title"]}\nАвтор: {book["author"]}\n\n')
