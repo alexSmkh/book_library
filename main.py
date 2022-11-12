@@ -16,7 +16,7 @@ def check_for_redirect(response):
         raise requests.exceptions.HTTPError('An unexpected redirect occurred')
 
 
-def request_get(url, allow_redirects=True):
+def request_get(url, allow_redirects=False):
     response = requests.get(url, allow_redirects=allow_redirects)
     response.raise_for_status()
 
@@ -26,15 +26,10 @@ def request_get(url, allow_redirects=True):
     return response
 
 
-def write_file(filepath, raw_data):
-    with open(filepath, 'wb') as file:
-        file.write(raw_data)
-
-
-def create_dir(dir_path):
+def create_dir(relative_path):
     dir_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        *dir_path,
+        relative_path,
     )
 
     if os.path.exists(dir_path):
@@ -45,27 +40,28 @@ def create_dir(dir_path):
     return dir_path
 
 
-def download_file(file_url, relative_dir_path, filename):
-    try:
-        response = request_get(file_url, False)
-    except requests.exceptions.HTTPError:
-        return None
+def download_txt(url, filename, folder='books/'):
+    response = request_get(url)
 
-    dir_path = create_dir(relative_dir_path)
+    dir_path = create_dir(folder)
     filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}')
 
-    write_file(filepath, response.content)
+    with open(filepath, 'w', encoding='utf-8') as file:
+        file.write(response.text)
 
     return filepath
 
 
-def download_image(image_url):
-    filename = unquote(urlsplit(image_url).path.split('/')[-1])
-    return download_file(image_url, ['books', 'images'], filename)
+def download_image(url, filename, folder='images/'):
+    response = request_get(url)
 
+    dir_path = create_dir(folder)
+    filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}')
 
-def download_txt(url, filename, folder='books'):
-    return download_file(url, [folder], f'{filename}.txt')
+    with open(filepath, 'wb') as file:
+        file.write(response.content)
+
+    return filepath
 
 
 def parse_book_page(page):
@@ -99,34 +95,8 @@ def parse_book_page(page):
     }
 
 
-def fetch_book_info(book_page_url):
-    try:
-        response = request_get(book_page_url, False)
-    except requests.exceptions.HTTPError:
-        return None
-
-    return parse_book_page(response.text)
-
-
 def print_book_info(title, author):
     print(f'Название: {title}\nАвтор: {author}\n\n')
-
-
-def download_books(start_book_id, end_book_id):
-    for current_book_id in range(start_book_id, end_book_id + 1):
-        download_book_url = f'{BASE_URL}txt.php?id={current_book_id}'
-        book_page_url = f'{BASE_URL}b{current_book_id}/'
-        book_info = fetch_book_info(book_page_url)
-        time.sleep(0.5)
-
-        if not book_info:
-            continue
-
-        filename = f'{current_book_id}. {book_info["title"]}'
-        download_txt(download_book_url, filename)
-        download_image(book_info['image_url'])
-
-        print_book_info(book_info['title'], book_info['author'])
 
 
 def validate_args(start_id, end_id):
@@ -172,4 +142,31 @@ if __name__ == '__main__':
 
     validate_args(start_book_id, end_book_id)
 
-    download_books(start_book_id, end_book_id)
+    for current_book_id in range(start_book_id, end_book_id + 1):
+        download_book_url = f'{BASE_URL}txt.php?id={current_book_id}'
+        book_page_url = f'{BASE_URL}b{current_book_id}/'
+
+        try:
+            book_page_response = request_get(book_page_url)
+        except requests.exceptions.HTTPError:
+            continue
+
+        time.sleep(0.5)
+
+        book_info = parse_book_page(book_page_response.text)
+
+        filename = f'{current_book_id}. {book_info["title"]}.txt'
+        try:
+            download_txt(download_book_url, filename)
+        except requests.exceptions.HTTPError:
+            continue
+
+        image_url = book_info['image_url']
+        image_filename = unquote(urlsplit(image_url).path.split('/')[-1])
+        try:
+            download_image(image_url, image_filename)
+        except requests.exceptions.HTTPError:
+            print(f'Не удалось загружить изображения для {book_info["title"]}')
+            continue
+
+        print_book_info(book_info['title'], book_info['author'])
