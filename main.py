@@ -1,6 +1,8 @@
 import argparse
 import os
+import sys
 from urllib.parse import unquote, urljoin, urlsplit
+from time import sleep
 
 import requests
 from bs4 import BeautifulSoup
@@ -146,7 +148,9 @@ if __name__ == '__main__':
 
     validate_args(start_book_id, end_book_id)
 
-    for current_book_id in range(start_book_id, end_book_id + 1):
+    connection_error_counter = 0
+    current_book_id = start_book_id
+    while current_book_id <= end_book_id:
         book_params = {'id': current_book_id}
         download_book_url = f'{BASE_URL}/txt.php'
         book_page_url = f'{BASE_URL}/b{current_book_id}/'
@@ -162,7 +166,24 @@ if __name__ == '__main__':
             image_url = book['image_url']
             image_filename = unquote(urlsplit(image_url).path.split('/')[-1])
             download_image(image_url, image_filename)
+            print(f'Название: {book["title"]}\nАвтор: {book["author"]}\n\n')
+            current_book_id += 1
+            connection_error_counter = 0
         except requests.exceptions.HTTPError:
+            current_book_id += 1
+            connection_error_counter = 0
             continue
+        except requests.exceptions.ConnectionError:
+            if connection_error_counter > 10:
+                print(
+                    'Internet connection problems. Please try again later',
+                    file=sys.stderr,
+                )
+                break
 
-        print(f'Название: {book["title"]}\nАвтор: {book["author"]}\n\n')
+            print(
+                'Internet connection problems... Please wait...',
+                file=sys.stderr,
+            )
+            sleep(5)
+            connection_error_counter += 1
