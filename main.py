@@ -60,12 +60,12 @@ def download_image(url, filename, url_params={}, folder='images/'):
     return filepath
 
 
-def parse_book_page(page):
+def parse_book_page(page, book_page_url):
     soup = BeautifulSoup(page, 'lxml')
     main_content = soup.find('div', id='content')
 
     image_url = urljoin(
-        BASE_URL,
+        book_page_url,
         main_content.find('div', class_='bookimage').find('img')['src'],
     )
     title, author = list(
@@ -149,7 +149,7 @@ if __name__ == '__main__':
         try:
             book_page_response = make_get_request(book_page_url)
 
-            book = parse_book_page(book_page_response.text)
+            book = parse_book_page(book_page_response.text, book_page_url)
 
             filename = f'{current_book_id}. {book["title"]}.txt'
             download_txt(download_book_url, filename, book_params)
