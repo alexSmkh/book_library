@@ -16,7 +16,7 @@ def check_for_redirect(response):
         raise requests.exceptions.HTTPError('An unexpected redirect occurred')
 
 
-def request_get(url, params={}, allow_redirects=False):
+def make_get_request(url, params={}, allow_redirects=False):
     response = requests.get(
         url,
         params=params,
@@ -45,7 +45,7 @@ def create_dir(relative_path):
 
 
 def download_txt(url, filename, url_params={}, folder='books/'):
-    response = request_get(url, url_params)
+    response = make_get_request(url, url_params)
 
     dir_path = create_dir(folder)
     filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}')
@@ -57,7 +57,7 @@ def download_txt(url, filename, url_params={}, folder='books/'):
 
 
 def download_image(url, filename, url_params={}, folder='images/'):
-    response = request_get(url, url_params)
+    response = make_get_request(url, url_params)
 
     dir_path = create_dir(folder)
     filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}')
@@ -155,7 +155,7 @@ if __name__ == '__main__':
         book_page_url = f'{BASE_URL}/b{current_book_id}/'
 
         try:
-            book_page_response = request_get(book_page_url)
+            book_page_response = make_get_request(book_page_url)
 
             book = parse_book_page(book_page_response.text)
 
