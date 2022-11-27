@@ -67,12 +67,12 @@ def download_image(url, filename, url_params={}, folder='images/'):
 
 def parse_book_urls(page, page_url):
     soup = BeautifulSoup(page, 'lxml')
-    main_content = soup.find('div', id='content')
+    main_content = soup.select_one('#content')
 
-    book_cards = main_content.find_all('table', class_='d_book')
+    book_cards = main_content.select('table.d_book')
     book_urls = []
     for book_card in book_cards:
-        book_path = book_card.find('div', class_='bookimage').find('a')['href']
+        book_path = book_card.select_one('.bookimage a')['href']
         book_url = urljoin(page_url, book_path)
         book_urls.append(book_url)
     return book_urls
@@ -80,11 +80,11 @@ def parse_book_urls(page, page_url):
 
 def parse_book_page(page, book_page_url):
     soup = BeautifulSoup(page, 'lxml')
-    main_content = soup.find('div', id='content')
+    main_content = soup.select_one('#content')
 
     image_url = urljoin(
         book_page_url,
-        main_content.find('div', class_='bookimage').find('img')['src'],
+        main_content.select_one('.bookimage img')['src']
     )
 
     download_url = urljoin(
@@ -95,19 +95,19 @@ def parse_book_page(page, book_page_url):
     title, author = list(
         map(
             lambda part_of_name: part_of_name.strip(),
-            main_content.find('h1').text.split('::'),
+            main_content.select_one('h1').text.split('::'),
         )
     )
     comments = list(
         map(
-            lambda comment: comment.find('span', class_='black').text,
-            main_content.find_all('div', class_='texts'),
+            lambda comment: comment.select_one('.black').text,
+            main_content.select('.texts'),
         ),
     )
     genres = list(
         map(
             lambda genre: genre.text,
-            main_content.find('span', class_='d_book').find_all('a'),
+            main_content.select('span.d_book a')
         ),
     )
 
@@ -161,11 +161,11 @@ def download_book_with_image(book_url):
     book_page_response = make_get_request(book_url)
     book = parse_book_page(book_page_response.text, book_url)
     filename = f'{book["title"]}.txt'
-    download_txt(book['download_url'], filename)
+    # download_txt(book['download_url'], filename)
 
     image_url = book['image_url']
     image_filename = unquote(urlsplit(image_url).path.split('/')[-1])
-    download_image(image_url, image_filename)
+    # download_image(image_url, image_filename)
 
     return {
         'title': book['title'],
