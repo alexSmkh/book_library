@@ -4,6 +4,7 @@ import sys
 import json
 from time import sleep
 from urllib.parse import unquote, urljoin, urlsplit
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
@@ -12,8 +13,7 @@ from pathvalidate import sanitize_filename
 
 BASE_URL = 'https://tululu.org'
 SCIENCE_FICTION_URL = 'https://tululu.org/l55/'
-IMAGES_DIR = 'images/'
-BOOKS_DIR = 'books/'
+DEST_FOLDER = None
 
 
 def check_for_redirect(response):
@@ -41,10 +41,10 @@ def create_dir(relative_path):
     return dir_path
 
 
-def download_txt(url, filename, url_params={}, folder='books/'):
+def download_txt(url, filename, url_params={}):
     response = make_get_request(url, url_params)
 
-    dir_path = create_dir(folder)
+    dir_path = create_dir(os.path.join(f'{DEST_FOLDER}', 'books'))
     filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}')
 
     with open(filepath, 'w', encoding='utf-8') as file:
@@ -53,10 +53,10 @@ def download_txt(url, filename, url_params={}, folder='books/'):
     return filepath
 
 
-def download_image(url, filename, url_params={}, folder='images/'):
+def download_image(url, filename, url_params={}):
     response = make_get_request(url, url_params)
 
-    dir_path = create_dir(folder)
+    dir_path = create_dir(os.path.join(f'{DEST_FOLDER}', 'images'))
     filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}')
 
     with open(filepath, 'wb') as file:
@@ -129,6 +129,7 @@ def validate_args(start_page, end_page):
 
 
 def init_parser():
+    root_path = Path(__file__).parent.resolve()
     parser = argparse.ArgumentParser(
         description='The program allows you to download books \
             from https://tululu.org/\n'
@@ -153,24 +154,55 @@ def init_parser():
         nargs='?',
         type=int
     )
+    parser.add_argument(
+        '--skip_imgs',
+        help="Don't download book covers",
+        action='store_const',
+        const=True,
+        default=False
+    )
+    parser.add_argument(
+        '--skip_txt',
+        help="Don't download books",
+        action='store_const',
+        const=True,
+        default=False
+    )
+    parser.add_argument(
+        '--json_path',
+        help='Specify the path to the file with information about books',
+        type=str,
+        default=root_path
+    )
+    parser.add_argument(
+        '--dest_folder',
+        help='''
+        Path to the directory with parsing results: pictures, books, JSON.
+        ''',
+        type=str,
+        default=root_path
+    )
+
     return parser
 
 
-def download_book_with_image(book_url):
+def download_book_with_image(book_url, skip_imgs, skip_txt):
     book_page_response = make_get_request(book_url)
     book = parse_book_page(book_page_response.text, book_url)
     filename = f'{book["title"]}.txt'
-    # download_txt(book['download_url'], filename)
+    if not skip_txt:
+        download_txt(book['download_url'], filename)
 
     image_url = book['image_url']
     image_filename = unquote(urlsplit(image_url).path.split('/')[-1])
-    # download_image(image_url, image_filename)
+    if not skip_imgs:
+        download_image(image_url, image_filename)
 
     return {
         'title': book['title'],
         'author': book['author'],
-        'img_src': f'{os.path.join(IMAGES_DIR, image_filename)}',
-        'book_path': f'{os.path.join(BOOKS_DIR, filename)}',
+        'img_src': f'{os.path.join(DEST_FOLDER, "images", image_filename)}',
+        'book_path': f'{os.path.join(DEST_FOLDER, "books", filename)}',
         'comments':  book['comments'],
         'genres': book['genres']
     }
@@ -207,7 +239,16 @@ def make_request_safely(request_func):
 if __name__ == '__main__':
     parser = init_parser()
     args = parser.parse_args()
-    start_page, end_page = args.start_page, args.end_page
+    start_page, end_page, skip_imgs, skip_txt, json_path, dest_folder = (
+        args.start_page,
+        args.end_page,
+        args.skip_imgs,
+        args.skip_txt,
+        args.json_path,
+        args.dest_folder
+    )
+
+    DEST_FOLDER = dest_folder
 
     if not end_page:
         page_url = urljoin(SCIENCE_FICTION_URL, str(start_page))
@@ -231,7 +272,13 @@ if __name__ == '__main__':
 
     books = []
     for book_url in book_urls:
-        book = make_request_safely(lambda: download_book_with_image(book_url))
+        book = make_request_safely(
+            lambda: download_book_with_image(
+                book_url,
+                skip_imgs,
+                skip_txt
+            )
+        )
 
         if not book:
             continue
@@ -239,5 +286,10 @@ if __name__ == '__main__':
         books.append(book)
         sleep(0.5)
 
-    with open('books.json', 'w', encoding='utf-8') as jsonfile:
+    create_dir(json_path)
+    with open(
+        os.path.join(json_path, 'books.json'),
+        'w',
+        encoding='utf-8'
+    ) as jsonfile:
         json.dump(books, jsonfile, ensure_ascii=False, indent=2)
