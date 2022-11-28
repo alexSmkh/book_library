@@ -134,7 +134,7 @@ def init_parser():
             from https://tululu.org/\n'
     )
     parser.add_argument(
-        'start_page',
+        '--start_page',
         help='''
         The id of the book from which the download begins.\n
         This value must be greater than 0 and less than the id of the final
@@ -145,14 +145,13 @@ def init_parser():
         default=1,
     )
     parser.add_argument(
-        'end_page',
+        '--end_page',
         help='''
         The id of the book where the download ends. This value must be greater
         than the start book id
         ''',
         nargs='?',
-        type=int,
-        default=10,
+        type=int
     )
     return parser
 
@@ -177,79 +176,67 @@ def download_book_with_image(book_url):
     }
 
 
+def parse_last_page_number(page):
+    soup = BeautifulSoup(page, 'lxml')
+    return soup.select('.npage')[-1].text
+
+
+def make_request_safely(request_func):
+    connection_error_counter = 0
+    while connection_error_counter < 10:
+        try:
+            return request_func()
+        except requests.exceptions.HTTPError:
+            return None
+        except requests.exceptions.ConnectionError:
+            if connection_error_counter >= 10:
+                print(
+                    'Internet connection problems. Please try again later',
+                    file=sys.stderr,
+                )
+                exit()
+
+            print(
+                'Internet connection problems... Please wait...',
+                file=sys.stderr,
+            )
+            connection_error_counter += 1
+            sleep(5)
+
+
 if __name__ == '__main__':
     parser = init_parser()
     args = parser.parse_args()
     start_page, end_page = args.start_page, args.end_page
+
+    if not end_page:
+        page_url = urljoin(SCIENCE_FICTION_URL, str(start_page))
+        page_response = make_request_safely(
+            lambda _: make_get_request(page_url)
+        )
+        end_page = parse_last_page_number(page_response.text)
+
     validate_args(start_page, end_page)
-
-    start_page, end_page = args.start_page, args.end_page
-
-    validate_args(start_page, end_page)
-
-    connection_error_counter = 0
 
     book_urls = []
-    current_page_number = start_page
-    while current_page_number <= end_page:
+    for current_page_number in range(start_page, end_page + 1):
         page_url = urljoin(SCIENCE_FICTION_URL, str(current_page_number))
-        try:
-            page_response = make_get_request(page_url)
-        except requests.exceptions.HTTPError:
-            print('PAGE ERROR')
-            current_page_number += 1
-            connection_error_counter = 0
+        page_response = make_request_safely(lambda: make_get_request(page_url))
+
+        if not page_response:
             continue
-        except requests.exceptions.ConnectionError:
-            if connection_error_counter > 10:
-                print(
-                    'Internet connection problems. Please try again later',
-                    file=sys.stderr,
-                )
-                break
 
-            print(
-                'Internet connection problems... Please wait...',
-                file=sys.stderr,
-            )
-            sleep(5)
-            connection_error_counter += 1
-
-        connection_error_counter = 0
-        current_page_number += 1
         book_urls.extend(parse_book_urls(page_response.text, page_url))
-        # I sleep so I don't get banned by the server
         sleep(0.5)
 
     books = []
-    current_books_url_index = 0
-    while current_books_url_index < len(book_urls):
-        book_url = book_urls[current_books_url_index]
+    for book_url in book_urls:
+        book = make_request_safely(lambda: download_book_with_image(book_url))
 
-        try:
-            book = download_book_with_image(book_url)
-        except requests.exceptions.HTTPError:
-            current_books_url_index += 1
-            connection_error_counter = 0
+        if not book:
             continue
-        except requests.exceptions.ConnectionError:
-            if connection_error_counter > 10:
-                print(
-                    'Internet connection problems. Please try again later',
-                    file=sys.stderr,
-                )
-                break
-
-            print(
-                'Internet connection problems... Please wait...',
-                file=sys.stderr,
-            )
-            sleep(5)
-            connection_error_counter += 1
 
         books.append(book)
-        connection_error_counter = 0
-        current_books_url_index += 1
         sleep(0.5)
 
     with open('books.json', 'w', encoding='utf-8') as jsonfile:
