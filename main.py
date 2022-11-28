@@ -9,6 +9,7 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
+from tqdm import tqdm
 
 
 BASE_URL = 'https://tululu.org'
@@ -124,7 +125,7 @@ def parse_book_page(page, book_page_url):
 def validate_args(start_page, end_page):
     if start_page <= 0:
         raise SystemExit('The start page must be greater than 0')
-    elif end_page <= start_page:
+    elif end_page < start_page:
         raise SystemExit('The end page must be greater than start page')
 
 
@@ -210,7 +211,7 @@ def download_book_with_image(book_url, skip_imgs, skip_txt):
 
 def parse_last_page_number(page):
     soup = BeautifulSoup(page, 'lxml')
-    return soup.select('.npage')[-1].text
+    return int(soup.select('.npage')[-1].text)
 
 
 def make_request_safely(request_func):
@@ -253,14 +254,17 @@ if __name__ == '__main__':
     if not end_page:
         page_url = urljoin(SCIENCE_FICTION_URL, str(start_page))
         page_response = make_request_safely(
-            lambda _: make_get_request(page_url)
+            lambda: make_get_request(page_url)
         )
         end_page = parse_last_page_number(page_response.text)
 
     validate_args(start_page, end_page)
 
     book_urls = []
-    for current_page_number in range(start_page, end_page + 1):
+    downloaded_pages = 0
+    pages = tqdm(range(start_page, end_page + 1))
+    for current_page_number in pages:
+        pages.set_description(f'Download {current_page_number} page')
         page_url = urljoin(SCIENCE_FICTION_URL, str(current_page_number))
         page_response = make_request_safely(lambda: make_get_request(page_url))
 
@@ -268,10 +272,17 @@ if __name__ == '__main__':
             continue
 
         book_urls.extend(parse_book_urls(page_response.text, page_url))
+        downloaded_pages += 1
         sleep(0.5)
 
+    print(
+        f'{downloaded_pages} of {end_page - start_page + 1} pages has been downloaded'
+    )
+
     books = []
-    for book_url in book_urls:
+    tqdm_book_urls = tqdm(book_urls)
+    downloaded_books = 0
+    for book_url in tqdm_book_urls:
         book = make_request_safely(
             lambda: download_book_with_image(
                 book_url,
@@ -279,12 +290,16 @@ if __name__ == '__main__':
                 skip_txt
             )
         )
+        tqdm_book_urls.set_description(f'Download the "{book["title"]}" book')
 
         if not book:
             continue
 
         books.append(book)
+        downloaded_books += 1
         sleep(0.5)
+
+    print(f'{downloaded_books} books has been downloaded')
 
     create_dir(json_path)
     with open(
