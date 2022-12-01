@@ -158,16 +158,12 @@ def init_parser():
     parser.add_argument(
         '--skip_imgs',
         help="Don't download book covers",
-        action='store_const',
-        const=True,
-        default=False
+        action='store_true'
     )
     parser.add_argument(
         '--skip_txt',
         help="Don't download books",
-        action='store_const',
-        const=True,
-        default=False
+        action='store_true'
     )
     parser.add_argument(
         '--json_path',
