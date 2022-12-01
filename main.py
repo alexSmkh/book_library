@@ -12,11 +12,6 @@ from pathvalidate import sanitize_filename
 from tqdm import tqdm
 
 
-BASE_URL = 'https://tululu.org'
-SCIENCE_FICTION_URL = 'https://tululu.org/l55/'
-DEST_FOLDER = None
-
-
 def check_for_redirect(response):
     if response.history:
         raise requests.exceptions.HTTPError('An unexpected redirect occurred')
@@ -42,10 +37,10 @@ def create_dir(relative_path):
     return dir_path
 
 
-def download_txt(url, filename, url_params={}):
+def download_txt(url, dest_folder, filename, url_params={}):
     response = make_get_request(url, url_params)
 
-    dir_path = create_dir(os.path.join(f'{DEST_FOLDER}', 'books'))
+    dir_path = create_dir(os.path.join(f'{dest_folder}', 'books'))
     filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}')
 
     with open(filepath, 'w', encoding='utf-8') as file:
@@ -54,10 +49,10 @@ def download_txt(url, filename, url_params={}):
     return filepath
 
 
-def download_image(url, filename, url_params={}):
+def download_image(url, dest_folder, filename, url_params={}):
     response = make_get_request(url, url_params)
 
-    dir_path = create_dir(os.path.join(f'{DEST_FOLDER}', 'images'))
+    dir_path = create_dir(os.path.join(f'{dest_folder}', 'images'))
     filepath = os.path.join(dir_path, f'{sanitize_filename(filename)}')
 
     with open(filepath, 'wb') as file:
@@ -183,23 +178,23 @@ def init_parser():
     return parser
 
 
-def download_book_with_image(book_url, skip_imgs, skip_txt):
+def download_book_with_image(book_url, dest_folder, skip_imgs, skip_txt):
     book_page_response = make_get_request(book_url)
     book = parse_book_page(book_page_response.text, book_url)
     filename = f'{book["title"]}.txt'
     if not skip_txt:
-        download_txt(book['download_url'], filename)
+        download_txt(book['download_url'], dest_folder, filename)
 
     image_url = book['image_url']
     image_filename = unquote(urlsplit(image_url).path.split('/')[-1])
     if not skip_imgs:
-        download_image(image_url, image_filename)
+        download_image(image_url, dest_folder, image_filename)
 
     return {
         'title': book['title'],
         'author': book['author'],
-        'img_src': f'{os.path.join(DEST_FOLDER, "images", image_filename)}',
-        'book_path': f'{os.path.join(DEST_FOLDER, "books", filename)}',
+        'img_src': f'{os.path.join(dest_folder, "images", image_filename)}',
+        'book_path': f'{os.path.join(dest_folder, "books", filename)}',
         'comments':  book['comments'],
         'genres': book['genres']
     }
@@ -233,7 +228,9 @@ def make_request_safely(request_func):
             sleep(5)
 
 
-if __name__ == '__main__':
+def main():
+    science_fiction_url = 'https://tululu.org/l55/'
+
     parser = init_parser()
     args = parser.parse_args()
     start_page, end_page, skip_imgs, skip_txt, json_path, dest_folder = (
@@ -245,10 +242,8 @@ if __name__ == '__main__':
         args.dest_folder
     )
 
-    DEST_FOLDER = dest_folder
-
     if not end_page:
-        page_url = urljoin(SCIENCE_FICTION_URL, str(start_page))
+        page_url = urljoin(science_fiction_url, str(start_page))
         page_response = make_request_safely(
             lambda: make_get_request(page_url)
         )
@@ -261,7 +256,7 @@ if __name__ == '__main__':
     pages = tqdm(range(start_page, end_page + 1))
     for current_page_number in pages:
         pages.set_description(f'Download {current_page_number} page')
-        page_url = urljoin(SCIENCE_FICTION_URL, str(current_page_number))
+        page_url = urljoin(science_fiction_url, str(current_page_number))
         page_response = make_request_safely(lambda: make_get_request(page_url))
 
         if not page_response:
@@ -282,6 +277,7 @@ if __name__ == '__main__':
         book = make_request_safely(
             lambda: download_book_with_image(
                 book_url,
+                dest_folder,
                 skip_imgs,
                 skip_txt
             )
@@ -304,3 +300,7 @@ if __name__ == '__main__':
         encoding='utf-8'
     ) as jsonfile:
         json.dump(books, jsonfile, ensure_ascii=False, indent=2)
+
+
+if __name__ == '__main__':
+    main()
