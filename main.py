@@ -186,22 +186,25 @@ def download_book_with_image(book_url, dest_folder, skip_imgs, skip_txt):
     book_page_response = make_get_request(book_url)
     book = parse_book_page(book_page_response.text, book_url)
     filename = f'{book["title"]}.txt'
+    result = {}
+
     if not skip_txt:
-        download_txt(book['download_url'], dest_folder, filename)
+        result['book_path'] = download_txt(book['download_url'], dest_folder, filename)
 
     image_url = book['image_url']
     image_filename = unquote(urlsplit(image_url).path.split('/')[-1])
-    if not skip_imgs:
-        download_image(image_url, dest_folder, image_filename)
 
-    return {
+    if not skip_imgs:
+        result['img_src'] = download_image(image_url, dest_folder, image_filename)
+
+    result.update({
         'title': book['title'],
         'author': book['author'],
-        'img_src': f'{os.path.join(dest_folder, "images", image_filename)}',
-        'book_path': f'{os.path.join(dest_folder, "books", filename)}',
         'comments':  book['comments'],
         'genres': book['genres']
-    }
+    })
+
+    return result
 
 
 def parse_last_page_number(page):
