@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 import json
+import logging
 from time import sleep
 from urllib.parse import unquote, urljoin, urlsplit
 from pathlib import Path
@@ -10,6 +11,9 @@ import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from tqdm import tqdm
+
+
+logging.basicConfig(filename='logs.log', filemode='w')
 
 
 def check_for_redirect(response):
@@ -210,16 +214,19 @@ def make_request_safely(request_func):
     while connection_error_counter < 10:
         try:
             return request_func()
-        except requests.exceptions.HTTPError:
+        except requests.exceptions.HTTPError as err:
+            logging.error(err, exc_info=True)
             return None
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError as err:
             if connection_error_counter >= 10:
                 print(
                     'Internet connection problems. Please try again later',
                     file=sys.stderr,
                 )
-                exit()
+                logging.error(err, exc_info=True)
+                sys.exit()
 
+            logging.warning(err, exc_info=True)
             print(
                 'Internet connection problems... Please wait...',
                 file=sys.stderr,
@@ -228,11 +235,9 @@ def make_request_safely(request_func):
             sleep(5)
 
 
-def main():
+def main(args):
     science_fiction_url = 'https://tululu.org/l55/'
 
-    parser = init_parser()
-    args = parser.parse_args()
     start_page, end_page, skip_imgs, skip_txt, json_path, dest_folder = (
         args.start_page,
         args.end_page,
@@ -260,6 +265,10 @@ def main():
         page_response = make_request_safely(lambda: make_get_request(page_url))
 
         if not page_response:
+            print(
+                f'An error occurred while downloading the page {current_page_number}',
+                file=sys.stdout
+            )
             continue
 
         book_urls.extend(parse_book_urls(page_response.text, page_url))
@@ -303,4 +312,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = init_parser()
+    args = parser.parse_args()
+    main(args)
