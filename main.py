@@ -288,6 +288,10 @@ def main(start_page, end_page, skip_imgs, skip_txt, json_path, dest_folder):
         tqdm_book_urls.set_description(f'Download the "{book["title"]}" book')
 
         if not book:
+            print(
+                f'An error occurred while downloading the book: {book_url}',
+                file=sys.stdout
+            )
             continue
 
         books.append(book)
