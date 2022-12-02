@@ -238,7 +238,18 @@ def make_request_safely(request_func):
             sleep(5)
 
 
-def main(start_page, end_page, skip_imgs, skip_txt, json_path, dest_folder):
+def main():
+    parser = init_parser()
+    args = parser.parse_args()
+    start_page, end_page, skip_imgs, skip_txt, json_path, dest_folder = (
+        args.start_page,
+        args.end_page,
+        args.skip_imgs,
+        args.skip_txt,
+        args.json_path,
+        args.dest_folder
+    )
+
     science_fiction_url = 'https://tululu.org/l55/'
 
     if not end_page:
@@ -310,14 +321,4 @@ def main(start_page, end_page, skip_imgs, skip_txt, json_path, dest_folder):
 
 
 if __name__ == '__main__':
-    parser = init_parser()
-    args = parser.parse_args()
-    start_page, end_page, skip_imgs, skip_txt, json_path, dest_folder = (
-        args.start_page,
-        args.end_page,
-        args.skip_imgs,
-        args.skip_txt,
-        args.json_path,
-        args.dest_folder
-    )
-    main(start_page, end_page, skip_imgs, skip_txt, json_path, dest_folder)
+    main()
