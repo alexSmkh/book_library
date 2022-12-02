@@ -13,7 +13,11 @@ from pathvalidate import sanitize_filename
 from tqdm import tqdm
 
 
-logging.basicConfig(filename='logs.log', filemode='w')
+logger = logging.getLogger(__file__)
+
+
+def log_error(err):
+    logging.error(err, exc_info=True)
 
 
 def check_for_redirect(response):
@@ -218,7 +222,7 @@ def make_request_safely(request_func):
         try:
             return request_func()
         except requests.exceptions.HTTPError as err:
-            logging.error(err, exc_info=True)
+            log_error(err)
             return None
         except requests.exceptions.ConnectionError as err:
             if connection_error_counter >= 10:
@@ -226,10 +230,10 @@ def make_request_safely(request_func):
                     'Internet connection problems. Please try again later',
                     file=sys.stderr,
                 )
-                logging.error(err, exc_info=True)
+                log_error(err)
                 sys.exit()
 
-            logging.warning(err, exc_info=True)
+            log_error(err)
             print(
                 'Internet connection problems... Please wait...',
                 file=sys.stderr,
@@ -239,6 +243,8 @@ def make_request_safely(request_func):
 
 
 def main():
+    logging.basicConfig(filename='logs.log', filemode='w')
+
     parser = init_parser()
     args = parser.parse_args()
     start_page, end_page, skip_imgs, skip_txt, json_path, dest_folder = (
