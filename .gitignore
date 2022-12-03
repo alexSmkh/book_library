@@ -1,5 +1,6 @@
 /books
 /images
+/pages
 .venv
 logs.log
 books.json
