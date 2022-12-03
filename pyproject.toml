@@ -8,6 +8,7 @@ packages = [{include = "book_library"}]
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5.10.1"
+livereload = "^2.6.3"
 
 
 [tool.black]
@@ -21,6 +22,7 @@ beautifulsoup4 = "^4.11.1"
 lxml = "^4.9.1"
 pathvalidate = "^2.5.2"
 tqdm = "^4.64.1"
+jinja2 = "^3.1.2"
 
 [build-system]
 requires = ["poetry-core"]

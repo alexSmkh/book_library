@@ -66,7 +66,7 @@ def download_image(url, dest_folder, filename, url_params={}):
     with open(filepath, 'wb') as file:
         file.write(response.content)
 
-    return filepath
+    return os.path.relpath(filepath, '.')
 
 
 def parse_book_urls(page, page_url):

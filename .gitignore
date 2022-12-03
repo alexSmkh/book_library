@@ -2,3 +2,4 @@
 /images
 .venv
 logs.log
+books.json
