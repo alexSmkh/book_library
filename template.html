@@ -76,6 +76,13 @@
                   <div class="card-body">
                     <h5 class="card-title">{{ book['title'] }}</h5>
                     <p class="card-text">{{ book['author'] }}</p>
+
+                    <div class="mt-2 mb-2">
+                      {% for genre in book['genres'] %}
+                        <span class="badge rounded-pill bg-secondary">{{ genre }}</span>
+                      {% endfor %}
+                    </div>
+
                     <p class="card-text">
                       {% if book.get('book_path') %}
                       <a href="{{ book['book_path']|build_relative_path_to_file|urlencode }}" target="_blank"
