@@ -2,6 +2,7 @@ import argparse
 import json
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from more_itertools import chunked
 
 
 def init_parser():
@@ -23,7 +24,8 @@ def on_reload(books):
     )
 
     template = env.get_template('template.html')
-    rendered_page = template.render(books=books)
+    chunked_books = list(chunked(books, 2))
+    rendered_page = template.render(chunked_books=chunked_books)
 
     with open('index.html', 'w', encoding='utf8') as file:
         file.write(rendered_page)
