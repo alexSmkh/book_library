@@ -54,7 +54,7 @@ def download_txt(url, dest_folder, filename, url_params={}):
     with open(filepath, 'w', encoding='utf-8') as file:
         file.write(response.text)
 
-    return filepath
+    return os.path.relpath(filepath, '.')
 
 
 def download_image(url, dest_folder, filename, url_params={}):
@@ -91,10 +91,8 @@ def parse_book_page(page, book_page_url):
         main_content.select_one('.bookimage img')['src']
     )
 
-    download_url = urljoin(
-        book_page_url,
-        main_content.find('a', text='сохранить txt')
-    )
+    download_tag = main_content.find('a', string='скачать txt')
+    download_url = urljoin(book_page_url, download_tag.get('href')) if download_tag else ''
 
     title, author = list(
         map(
@@ -192,7 +190,7 @@ def download_book_with_image(book_url, dest_folder, skip_imgs, skip_txt):
     filename = f'{book["title"]}.txt'
     result = {}
 
-    if not skip_txt:
+    if not skip_txt and book['download_url']:
         result['book_path'] = download_txt(book['download_url'], dest_folder, filename)
 
     image_url = book['image_url']
