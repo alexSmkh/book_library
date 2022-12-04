@@ -6,8 +6,8 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from more_itertools import chunked
 
 
-def build_relative_path_to_file(path):
-    return os.path.relpath(path, 'pages')
+def build_relative_path_to_file(path, from_path='pages'):
+    return os.path.relpath(path, from_path)
 
 
 def init_parser():
@@ -61,7 +61,6 @@ def main():
         books = json.load(file)
 
     on_reload(books)
-
 
 
 if __name__ == '__main__':
