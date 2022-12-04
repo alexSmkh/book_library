@@ -1,17 +1,16 @@
 import argparse
-import os
-import sys
 import json
 import logging
+import os
+import sys
+from pathlib import Path
 from time import sleep
 from urllib.parse import unquote, urljoin, urlsplit
-from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from tqdm import tqdm
-
 
 MEDIA_PATH = (Path(__file__).parent / os.path.join('..', 'media')).resolve()
 

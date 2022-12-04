@@ -6,7 +6,6 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from more_itertools import chunked
 
-
 SRC_PATH = Path(__file__).parent
 PAGES_PATH = (SRC_PATH / os.path.join('..', 'pages')).resolve()
 MEDIA_PATH = (SRC_PATH / os.path.join('..', 'media')).resolve()
