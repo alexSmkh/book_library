@@ -15,7 +15,7 @@
             <li class="page-item">
               <a
                 class="page-link"
-                href="{{ '%s_index.html'|format(previous_page) }}"
+                href="{{ 'index%s.html'|format(previous_page) }}"
                 tabindex="-1"
                 >Previous</a
               >
@@ -35,7 +35,7 @@
               <li class="page-item">
                 <a
                   class="page-link"
-                  href="{{ '%s_index.html'|format(current_page) }}"
+                  href="{{ 'index%s.html'|format(current_page) }}"
                   >{{ current_page }}</a
                 >
               </li>
@@ -44,7 +44,7 @@
 
           {% if next_page %}
             <li class="page-item">
-              <a class="page-link" href="{{ '%s_index.html'|format(next_page) }}"
+              <a class="page-link" href="{{ 'index%s.html'|format(next_page) }}"
                 >Next</a
               >
             </li>
@@ -57,6 +57,7 @@
       </nav>
 
       <hr />
+      
       {% for books in chunked_books %}
         <div class="row justify-content-center">
           {% for book in books %}

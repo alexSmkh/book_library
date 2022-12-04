@@ -13,6 +13,9 @@ from pathvalidate import sanitize_filename
 from tqdm import tqdm
 
 
+MEDIA_PATH = (Path(__file__).parent / os.path.join('..', 'media')).resolve()
+
+
 logger = logging.getLogger(__file__)
 
 
@@ -131,7 +134,6 @@ def validate_args(start_page, end_page):
 
 
 def init_parser():
-    root_path = Path(__file__).parent.resolve()
     parser = argparse.ArgumentParser(
         description='The program allows you to download books \
             from https://tululu.org/\n'
@@ -170,7 +172,7 @@ def init_parser():
         '--json_path',
         help='Specify the path to the file with information about books',
         type=str,
-        default=root_path
+        default=MEDIA_PATH
     )
     parser.add_argument(
         '--dest_folder',
@@ -178,7 +180,7 @@ def init_parser():
         Path to the directory with parsing results: pictures, books, JSON.
         ''',
         type=str,
-        default=root_path
+        default=MEDIA_PATH
     )
 
     return parser
