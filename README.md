@@ -15,7 +15,7 @@ poetry install
 
 ## **How to run**
 ```
-poetry run python3 src/parse_tululu [-h] [options]
+poetry run python3 src/parse_tululu.py [-h] [options]
 ```
 
 * `--start_page` - Page number of the site from which the download begins. This value must be greater than 0 and less or equal than the number of the final page. `Default = 1`

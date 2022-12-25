@@ -88,14 +88,15 @@ def parse_book_page(page, book_page_url):
     soup = BeautifulSoup(page, 'lxml')
     main_content = soup.select_one('#content')
 
+    download_tag = main_content.find('a', string='скачать txt')
+    if download_tag is None:
+        return None
+    download_url = urljoin(book_page_url, download_tag.get('href')) if download_tag else ''
+
     image_url = urljoin(
         book_page_url,
         main_content.select_one('.bookimage img')['src']
     )
-
-    download_tag = main_content.find('a', string='скачать txt')
-    download_url = urljoin(book_page_url, download_tag.get('href')) if download_tag else ''
-
     title, author = list(
         map(
             lambda part_of_name: part_of_name.strip(),
@@ -188,6 +189,8 @@ def init_parser():
 def download_book_with_image(book_url, dest_folder, skip_imgs, skip_txt):
     book_page_response = make_get_request(book_url)
     book = parse_book_page(book_page_response.text, book_url)
+    if book is None:
+        return None
     filename = f'{book["title"]}.txt'
     result = {}
 
@@ -292,6 +295,7 @@ def main():
     books = []
     tqdm_book_urls = tqdm(book_urls)
     downloaded_books = 0
+    error_messages = []
     for book_url in tqdm_book_urls:
         book = make_request_safely(
             lambda: download_book_with_image(
@@ -301,20 +305,20 @@ def main():
                 skip_txt
             )
         )
-        tqdm_book_urls.set_description(f'Download the "{book["title"]}" book')
 
-        if not book:
-            print(
-                f'An error occurred while downloading the book: {book_url}',
-                file=sys.stdout
-            )
+        if book is None:
+            error_message = f'An error occurred while downloading the book: {book_url}'
+            tqdm_book_urls.set_description(error_message)
+            error_messages.append(error_message)
             continue
 
+        tqdm_book_urls.set_description(f'The "{book["title"]}" book has been downloaded')
         books.append(book)
         downloaded_books += 1
         sleep(0.5)
 
     print(f'{downloaded_books} books has been downloaded')
+    print(*error_messages, sep='\n')
 
     create_dir(json_path)
     with open(

@@ -281,30 +281,10 @@
     ]
   },
   {
-    "img_src": "media/images/nopic.gif",
-    "title": "Der Schwarm",
-    "author": "Schaetzing Frank",
-    "comments": [],
-    "genres": [
-      "Научная фантастика",
-      "Триллеры"
-    ]
-  },
-  {
     "book_path": "media/books/Justitia - est Часть 1.txt",
     "img_src": "media/images/nopic.gif",
     "title": "Justitia - est Часть 1",
     "author": "Картман Эрика",
-    "comments": [],
-    "genres": [
-      "Научная фантастика",
-      "Прочие Детективы"
-    ]
-  },
-  {
-    "img_src": "media/images/8595.jpg",
-    "title": "Lost in a Good Book",
-    "author": "Fforde Jasper",
     "comments": [],
     "genres": [
       "Научная фантастика",
